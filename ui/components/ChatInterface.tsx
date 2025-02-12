@@ -15,7 +15,6 @@ import {
   Bot,
 } from "lucide-react";
 import { useTheme, getThemeClasses } from "./Theme";
-import { UserProfileButton } from "./Userbutton";
 import Typewriter from "./Typewriter";
 import Navbar from "./navbar";
 import { Input } from "./ui/input";
@@ -219,10 +218,7 @@ const ChatInterface = () => {
                       )}
                     </span>
                     {msg.type === "user" && (
-                      <div className="ml-2 mt-2">
-                        {/* @ts-ignore */}
-                        <UserProfileButton className="w-6 h-6" iconOnly />
-                      </div>
+                      <div className="ml-2 mt-2">{/* @ts-ignore */}</div>
                     )}
                   </div>
                 ))}
