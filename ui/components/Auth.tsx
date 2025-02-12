@@ -50,7 +50,7 @@ export const AuthTabs = () => {
       }
 
       toast.success("Logged in successfully");
-      router.push("/dashboard");
+      router.push("/chat");
     } catch (error: any) {
       toast.error(error.message || "Login failed");
     } finally {
@@ -88,7 +88,7 @@ export const AuthTabs = () => {
       }
 
       toast.success("Account created successfully");
-      router.push("/dashboard");
+      router.push("/chat");
     } catch (error: any) {
       toast.error(error.message || "Failed to create account");
     } finally {
