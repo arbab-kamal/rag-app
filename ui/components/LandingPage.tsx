@@ -1,30 +1,25 @@
 "use client";
-import { signIn, useSession } from "next-auth/react";
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { FcGoogle } from "react-icons/fc";
 import { Rocket, Lock } from "lucide-react";
 import { AuthTabs } from "./Auth";
-import Loading from "./Loading";
 
 const LandingPage = () => {
-  const { data: session, status } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (status === "authenticated") {
-      router.push("/chat");
-    }
-  }, [status, router]);
+    // Check if user has an authentication token (Modify based on your backend)
+    const token = localStorage.getItem("authToken"); // Or use cookies
 
-  if (status === "loading") {
-    return <Loading />;
-  }
+    if (token) {
+      router.push("/chat"); // Redirect if logged in
+    }
+  }, [router]);
 
   return (
     <div className="flex h-screen w-full">
       {/* Left Side - Hero Section */}
-      <div className="w-2/3 bg-gradient-to-br from-gray-900 to-gray-200 flex flex-col justify-center items-start p-16 text-gray-100 relative">
+      <div className="w-2/3 bg-gradient-to-br from-gray-900 to-gray-200 flex flex-col justify-center items-start p-16 text-gray-100">
         <div className="max-w-xl">
           <h1 className="text-5xl font-bold mb-6 tracking-tight">
             Welcome to <span className="text-gray-200">SuperNova</span>
@@ -44,16 +39,6 @@ const LandingPage = () => {
               <span className="text-gray-100">Secure Authentication</span>
             </div>
           </div>
-
-          {!session && (
-            <button
-              onClick={() => signIn("google")}
-              className="flex items-center gap-3 px-6 py-3 bg-gray-700 text-white rounded-full font-semibold hover:bg-gray-600 transition-colors"
-            >
-              <FcGoogle className="text-xl" />
-              Sign in with Google
-            </button>
-          )}
         </div>
       </div>
 
