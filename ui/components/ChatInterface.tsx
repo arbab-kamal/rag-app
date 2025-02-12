@@ -1,7 +1,7 @@
 /* eslint-disable @typescript-eslint/no-unused-vars */
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 "use client";
-import { useSession } from "next-auth/react";
+
 import React, { useState, useRef, useEffect } from "react";
 import { AiOutlinePaperClip } from "react-icons/ai";
 import {
@@ -42,7 +42,7 @@ const ChatInterface = () => {
   const themeClasses = getThemeClasses(theme);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const { data: session, status } = useSession();
+  // const { data: session, status } = useSession();
 
   const handleUploadClick = () => {
     if (fileInputRef.current) {
@@ -176,11 +176,11 @@ const ChatInterface = () => {
         className={`flex flex-col items-center justify-center min-h-screen mb-4 ${themeClasses.background}`}
       >
         <div className="w-full max-w-2xl mt-24 flex flex-col h-[calc(100vh-100px)]">
-          {session && !isChattingStarted && (
+          {/* {session && !isChattingStarted && (
             <h1 className={`text-3xl text-center mb-8 ${themeClasses.text}`}>
               {`Welcome, ${session.user.name || session.user.email}!`}
             </h1>
-          )}
+          )} */}
 
           <div className="flex-grow overflow-auto mb-4">
             {isChattingStarted && (
