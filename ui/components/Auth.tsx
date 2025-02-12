@@ -1,5 +1,6 @@
 /* eslint-disable @typescript-eslint/ban-ts-comment */
 "use client";
+
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import {
@@ -40,8 +41,8 @@ export const AuthTabs = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        credentials: "include", // Use this for session-based auth
-        body: JSON.stringify({ username, password }),
+        credentials: "include",
+        body: JSON.stringify({ user_name: username, password }), // 🔹 Send user_name instead of username
       });
 
       if (!response.ok) {
@@ -79,7 +80,12 @@ export const AuthTabs = () => {
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({ name, email, username, password }),
+        body: JSON.stringify({
+          name,
+          email_id: email, // 🔹 Send email_id instead of email
+          user_name: username, // 🔹 Send user_name instead of username
+          password,
+        }),
       });
 
       if (!response.ok) {
