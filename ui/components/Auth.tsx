@@ -42,7 +42,10 @@ export const AuthTabs = () => {
           "Content-Type": "application/json",
         },
         credentials: "include",
-        body: JSON.stringify({ userName: username, password }), // 🔹 Send user_name instead of username
+        body: JSON.stringify({
+          userName: username, // Changed to match backend entity
+          password,
+        }),
       });
 
       if (!response.ok) {
@@ -82,8 +85,8 @@ export const AuthTabs = () => {
         },
         body: JSON.stringify({
           name,
-          emailId: email, // 🔹 Send email_id instead of email
-          userName: username, // 🔹 Send user_name instead of username
+          emailId: email, // Changed to match backend entity
+          userName: username, // Changed to match backend entity
           password,
         }),
       });
