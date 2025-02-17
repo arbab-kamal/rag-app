@@ -1,33 +1,62 @@
-import React from "react";
-import { Settings, Search, Share2, Grid } from "lucide-react";
+"use client";
+import React, { useState, useEffect, useCallback } from "react";
+import { Settings, Search, Share2, User, LogOut, File } from "lucide-react";
 import { getThemeClasses, useTheme } from "./Theme";
 import PDFUploader from "./PdfUploader";
+import { useRouter } from "next/navigation";
 
 interface Document {
   id: number;
   title: string;
   date: string;
-  imageId: "1" | "2"; // Changed from image string to specific type
+  imageId: "1" | "2";
 }
+
+const MIN_SIDEBAR_WIDTH = 256; // 16rem
+const MAX_SIDEBAR_WIDTH = 800; // 50rem
 
 const RightSidebar = () => {
   const { theme } = useTheme();
+  const router = useRouter();
+  const [loading, setLoading] = useState(false);
+  const [files, setFiles] = useState<string[]>([]);
+  const [isResizing, setIsResizing] = useState(false);
+  const [sidebarWidth, setSidebarWidth] = useState(320);
+  const [error, setError] = useState<string | null>(null);
+  const [username, setUsername] = useState<string>("");
+
   const themeClasses = getThemeClasses(theme);
 
-  // Sample document data with simplified image references
-  const sampleDocuments: Document[] = [
-    {
-      id: 1,
-      title: "Project Report",
-      date: "2024-02-05",
-      imageId: "1",
+  // Handle mouse move event for resizing
+  const handleMouseMove = useCallback(
+    (event: MouseEvent) => {
+      if (!isResizing) return;
+
+      const newWidth = window.innerWidth - event.clientX;
+      if (newWidth >= MIN_SIDEBAR_WIDTH && newWidth <= MAX_SIDEBAR_WIDTH) {
+        setSidebarWidth(newWidth);
+      }
     },
-    { id: 2, title: "Business Proposal", date: "2024-02-07", imageId: "2" },
-    { id: 3, title: "Technical Specs", date: "2024-01-15", imageId: "1" },
-    { id: 4, title: "Meeting Notes", date: "2024-01-20", imageId: "2" },
-    { id: 5, title: "Research Paper", date: "2024-02-08", imageId: "1" },
-    { id: 6, title: "Financial Report", date: "2024-01-10", imageId: "2" },
-  ];
+    [isResizing]
+  );
+
+  // Handle mouse up event to stop resizing
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+  }, []);
+
+  // Add and remove event listeners for dragging
+  useEffect(() => {
+    if (isResizing) {
+      window.addEventListener("mousemove", handleMouseMove);
+      window.addEventListener("mouseup", handleMouseUp);
+    }
+
+    return () => {
+      window.removeEventListener("mousemove", handleMouseMove);
+      window.removeEventListener("mouseup", handleMouseUp);
+    };
+  }, [isResizing, handleMouseMove, handleMouseUp]);
 
   const themeHoverClasses = {
     light: {
@@ -70,18 +99,72 @@ const RightSidebar = () => {
   const currentThemeClasses =
     themeHoverClasses[theme] || themeHoverClasses.dark;
 
-  // Filter documents for last 7 and 30 days
   const now = new Date();
   const last7Days = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
   const last30Days = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000);
 
-  const recentDocs = sampleDocuments.filter(
-    (doc) => new Date(doc.date) >= last7Days
-  );
-  const olderDocs = sampleDocuments.filter((doc) => {
-    const docDate = new Date(doc.date);
-    return docDate < last7Days && docDate >= last30Days;
-  });
+  useEffect(() => {
+    fetchUsername();
+    fetchFiles();
+  }, []);
+
+  const fetchUsername = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/userName", {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch username");
+      }
+
+      const data = await response.text();
+      setUsername(data);
+    } catch (err: unknown) {
+      console.error("Error fetching username:", err);
+    }
+  };
+
+  const fetchFiles = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+      const response = await fetch("http://localhost:8080/files", {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch files");
+      }
+
+      const data = await response.json();
+      setFiles(data);
+    } catch (err: unknown) {
+      const errorMessage =
+        err instanceof Error ? err.message : "Failed to fetch files";
+      setError(errorMessage);
+      console.error("Error fetching files:", errorMessage);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    try {
+      const response = await fetch("http://localhost:8080/logout", {
+        method: "GET",
+        credentials: "include",
+      });
+
+      if (response.ok) {
+        window.location.href = "/";
+      } else {
+        console.error("Logout failed");
+      }
+    } catch (error) {
+      console.error("Error during logout:", error);
+    }
+  };
 
   const renderDocuments = (docs: Document[]) => {
     return docs.map((doc) => (
@@ -90,7 +173,6 @@ const RightSidebar = () => {
         className={`px-4 py-3 ${currentThemeClasses.hover} ${currentThemeClasses.text} rounded cursor-pointer flex items-center gap-3`}
       >
         <div className="w-6 h-6 flex-shrink-0 bg-gray-200 rounded overflow-hidden">
-          {/* Using public path for images */}
           <img
             src={`/${doc.imageId}.png`}
             alt={doc.title}
@@ -103,50 +185,101 @@ const RightSidebar = () => {
   };
 
   return (
-    <div
-      className={`fixed right-0 top-0 min-h-screen w-64 ${themeClasses.background} ${currentThemeClasses.text} overflow-hidden`}
-    >
-      <div className="p-4">
-        <div className="flex justify-between items-center mb-6">
-          <Settings className={`w-6 h-6 ${currentThemeClasses.icon}`} />
-          <div className="flex gap-4">
-            <Search className={`w-6 h-6 ${currentThemeClasses.icon}`} />
-            <Share2 className={`w-6 h-6 ${currentThemeClasses.icon}`} />
+    <>
+      {/* Drag handle */}
+      <div
+        className={`fixed right-0 top-0 bottom-0 cursor-ew-resize
+          ${isResizing ? "bg-gray-800" : "bg-gray-800"}
+          transition-colors duration-200`}
+        style={{
+          right: `${sidebarWidth}px`,
+          cursor: "ew-resize",
+          width: "1px",
+          backgroundColor: "rgb(31 41 55)",
+        }}
+        onMouseDown={() => setIsResizing(true)}
+      />
+
+      {/* Sidebar */}
+      <div
+        className={`fixed right-0 top-0 min-h-screen ${themeClasses.background} ${currentThemeClasses.text} overflow-hidden flex flex-col`}
+        style={{ width: `${sidebarWidth}px` }}
+      >
+        <div className="p-4 flex-1 overflow-y-auto">
+          <div className="flex justify-between items-center mb-6">
+            <Settings className={`w-6 h-6 ${currentThemeClasses.icon}`} />
+            <div className="flex gap-4">
+              <Search className={`w-6 h-6 ${currentThemeClasses.icon}`} />
+              <Share2 className={`w-6 h-6 ${currentThemeClasses.icon}`} />
+            </div>
           </div>
+
+          <nav className="space-y-4">
+            <div
+              className={`flex items-center gap-3 px-4 py-3 ${currentThemeClasses.hover} rounded cursor-pointer`}
+            >
+              <User className="w-5 h-5 flex-shrink-0" />
+              <span className="text-sm">{username || "Guest User"}</span>
+            </div>
+
+            <div className="mt-4 px-3 py-2">
+              <PDFUploader />
+            </div>
+
+            {/* Files Section */}
+            <div className="mt-6">
+              <h3
+                className={`px-4 text-xs font-medium ${currentThemeClasses.sidebarText} mb-2`}
+              >
+                Your Files
+              </h3>
+              <div className="space-y-1">
+                {loading ? (
+                  <div
+                    className={`px-4 py-3 ${currentThemeClasses.loadingBg} rounded`}
+                  >
+                    Loading files...
+                  </div>
+                ) : error ? (
+                  <div className="px-4 py-3 text-red-500 text-sm">{error}</div>
+                ) : files.length === 0 ? (
+                  <div
+                    className={`px-4 py-3 ${currentThemeClasses.text} text-sm`}
+                  >
+                    No files found
+                  </div>
+                ) : (
+                  files.map((fileName, index) => (
+                    <button
+                      key={index}
+                      type="button"
+                      className={`w-full px-4 py-3 ${currentThemeClasses.hover} ${currentThemeClasses.text} rounded cursor-pointer flex items-center gap-3 text-left`}
+                    >
+                      <File
+                        className={`w-5 h-5 ${currentThemeClasses.icon} flex-shrink-0`}
+                      />
+                      <span className="text-sm truncate">{fileName}</span>
+                    </button>
+                  ))
+                )}
+              </div>
+            </div>
+          </nav>
         </div>
 
-        <nav className="space-y-4">
-          <div
-            className={`flex items-center gap-3 px-4 py-3 ${currentThemeClasses.hover} rounded cursor-pointer`}
+        {/* Logout Button */}
+        <div className="p-4 border-t border-gray-700">
+          <button
+            type="button"
+            onClick={handleLogout}
+            className={`w-full px-4 py-3 ${currentThemeClasses.hover} ${currentThemeClasses.text} rounded cursor-pointer flex items-center gap-3`}
           >
-            <Grid className="w-5 h-5 flex-shrink-0" />
-            <span className="text-sm">Supernova PDF</span>
-          </div>
-
-          <div className="mt-4 px-3 py-2">
-            <PDFUploader />
-          </div>
-
-          <div className="mt-6">
-            <h3
-              className={`px-4 text-xs font-medium ${currentThemeClasses.sidebarText} mb-2`}
-            >
-              Previous 7 Days
-            </h3>
-            <div className="space-y-1">{renderDocuments(recentDocs)}</div>
-          </div>
-
-          <div className="mt-6">
-            <h3
-              className={`px-4 text-xs font-medium ${currentThemeClasses.sidebarText} mb-2`}
-            >
-              Previous 30 Days
-            </h3>
-            <div className="space-y-1">{renderDocuments(olderDocs)}</div>
-          </div>
-        </nav>
+            <LogOut className={`w-5 h-5 ${currentThemeClasses.icon}`} />
+            <span className="text-sm">Logout</span>
+          </button>
+        </div>
       </div>
-    </div>
+    </>
   );
 };
 

@@ -29,9 +29,9 @@ export function UserProfileButton() {
       onClick: () => router.push("/profile"),
     },
     {
-      label: "Billing",
+      label: "Documents",
       icon: CreditCard,
-      onClick: () => router.push("/billing"),
+      onClick: () => router.push("/documents"),
     },
     {
       label: "AI Agents",
@@ -44,7 +44,7 @@ export function UserProfileButton() {
       onClick: () => router.push("/settings"),
     },
     {
-      label: "Support",
+      label: "About",
       icon: HelpCircle,
       onClick: () => router.push("/support"),
     },
@@ -52,9 +52,16 @@ export function UserProfileButton() {
 
   return (
     <DropdownMenu>
-      <DropdownMenuTrigger asChild></DropdownMenuTrigger>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="flex items-center gap-2">
+          <Avatar className="w-8 h-8">
+            <AvatarImage src="/placeholder-avatar.png" alt="User Avatar" />
+            <AvatarFallback>U</AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        {menuItems.map((item, index) => (
+        {menuItems.map((item) => (
           <DropdownMenuItem
             key={item.label}
             onClick={item.onClick}
@@ -65,6 +72,13 @@ export function UserProfileButton() {
           </DropdownMenuItem>
         ))}
         <DropdownMenuSeparator />
+        <DropdownMenuItem
+          onClick={() => router.push("/logout")}
+          className="cursor-pointer flex items-center gap-2 text-red-500"
+        >
+          <LogOut className="w-4 h-4" />
+          Logout
+        </DropdownMenuItem>
       </DropdownMenuContent>
     </DropdownMenu>
   );

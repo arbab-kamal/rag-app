@@ -47,7 +47,7 @@ export const AuthTabs = () => {
           password,
         }),
       });
-
+      console.log("\n\n\n\n\n\nResponse : ", response);
       if (!response.ok) {
         const errorData = await response.json();
         throw new Error(errorData.message || "Login failed");
@@ -57,6 +57,7 @@ export const AuthTabs = () => {
       router.push("/chat");
     } catch (error: any) {
       toast.error(error.message || "Login failed");
+      router.push("/");
     } finally {
       setIsLoading(false);
     }
