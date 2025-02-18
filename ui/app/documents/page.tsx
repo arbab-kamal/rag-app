@@ -55,14 +55,13 @@ const DocumentListPage = () => {
 
       const fileNames = await response.json();
 
-      // Transform the raw file names into document objects
       const transformedDocs: Document[] = fileNames.map(
         (fileName: string, index: number) => ({
           id: index + 1,
           title: fileName,
           type: fileName.split(".").pop()?.toUpperCase() || "PDF",
-          size: "-- KB", // You could fetch actual file sizes if available from backend
-          modified: new Date().toLocaleDateString(), // You could fetch actual dates if available from backend
+          size: "-- KB",
+          modified: new Date().toLocaleDateString(),
         })
       );
 
@@ -81,7 +80,6 @@ const DocumentListPage = () => {
       const documentToDelete = documents.find((doc) => doc.id === docId);
       if (!documentToDelete) return;
 
-      // Using query parameter for the fileName
       const response = await fetch(
         `http://localhost:8080/delete?fileName=${encodeURIComponent(
           documentToDelete.title
@@ -96,15 +94,19 @@ const DocumentListPage = () => {
         throw new Error("Failed to delete document");
       }
 
+      // Remove the deleted document from the documents state
+      setDocuments((prevDocs) => prevDocs.filter((doc) => doc.id !== docId));
+
+      // Remove from selected docs if it was selected
       const newSelected = new Set(selectedDocs);
       newSelected.delete(docId);
       setSelectedDocs(newSelected);
-
-      await fetchDocuments();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to delete document"
       );
+      // Refresh documents list in case of error to ensure consistency
+      fetchDocuments();
     }
   };
 
@@ -141,9 +143,17 @@ const DocumentListPage = () => {
       setError(
         err instanceof Error ? err.message : "Failed to delete documents"
       );
+      // Refresh documents list in case of error
+      fetchDocuments();
     }
   };
 
+  // Add refresh handler for when new files are uploaded
+  const handleUploadComplete = () => {
+    fetchDocuments();
+  };
+
+  // Rest of the component remains the same ...
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       <header className="border-b border-gray-200 dark:border-gray-700">
@@ -162,7 +172,7 @@ const DocumentListPage = () => {
               Documents
             </h1>
             <div className="flex items-center space-x-4">
-              <MultiplePDFUploader onUploadComplete={fetchDocuments} />
+              <MultiplePDFUploader onUploadComplete={handleUploadComplete} />
 
               {selectedDocs.size > 0 && (
                 <button
