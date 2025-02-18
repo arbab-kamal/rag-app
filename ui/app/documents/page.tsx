@@ -32,7 +32,6 @@ const DocumentListPage = () => {
   const [uploadProgress, setUploadProgress] = useState(0);
   const [error, setError] = useState<string | null>(null);
 
-  // Sample folders (you can replace with actual folder data)
   const folders = [
     { id: 1, name: "Projects", count: 12 },
     { id: 2, name: "Reports", count: 8 },
@@ -54,8 +53,20 @@ const DocumentListPage = () => {
         throw new Error("Failed to fetch documents");
       }
 
-      const data = await response.json();
-      setDocuments(data);
+      const fileNames = await response.json();
+
+      // Transform the raw file names into document objects
+      const transformedDocs: Document[] = fileNames.map(
+        (fileName: string, index: number) => ({
+          id: index + 1,
+          title: fileName,
+          type: fileName.split(".").pop()?.toUpperCase() || "PDF",
+          size: "-- KB", // You could fetch actual file sizes if available from backend
+          modified: new Date().toLocaleDateString(), // You could fetch actual dates if available from backend
+        })
+      );
+
+      setDocuments(transformedDocs);
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to fetch documents"
@@ -65,63 +76,27 @@ const DocumentListPage = () => {
     }
   };
 
-  const handleFileUpload = async (
-    event: React.ChangeEvent<HTMLInputElement>
-  ) => {
-    const files = event.target.files;
-    if (!files || files.length === 0) return;
-
-    try {
-      setUploading(true);
-      setUploadProgress(0);
-
-      const formData = new FormData();
-      Array.from(files).forEach((file) => {
-        formData.append("files", file);
-      });
-
-      const response = await fetch("http://localhost:8080/upload", {
-        method: "POST",
-        credentials: "include",
-        body: formData,
-      });
-
-      if (!response.ok) {
-        throw new Error("Upload failed");
-      }
-
-      // Reset file input
-      if (fileInputRef.current) {
-        fileInputRef.current.value = "";
-      }
-
-      // Refresh document list
-      await fetchDocuments();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Upload failed");
-    } finally {
-      setUploading(false);
-      setUploadProgress(0);
-    }
-  };
-
   const handleDeleteDocument = async (docId: number) => {
     try {
-      const response = await fetch(`http://localhost:8080/documents/${docId}`, {
-        method: "DELETE",
-        credentials: "include",
-      });
+      const documentToDelete = documents.find((doc) => doc.id === docId);
+      if (!documentToDelete) return;
+
+      const response = await fetch(
+        `http://localhost:8080/delete/${documentToDelete.title}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+        }
+      );
 
       if (!response.ok) {
         throw new Error("Failed to delete document");
       }
 
-      // Remove from selected docs if it was selected
       const newSelected = new Set(selectedDocs);
       newSelected.delete(docId);
       setSelectedDocs(newSelected);
 
-      // Refresh document list
       await fetchDocuments();
     } catch (err) {
       setError(
@@ -168,7 +143,6 @@ const DocumentListPage = () => {
 
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
-      {/* Header */}
       <header className="border-b border-gray-200 dark:border-gray-700">
         <div className="container mx-auto px-4 py-4">
           <div className="flex items-center mb-4">
@@ -185,11 +159,8 @@ const DocumentListPage = () => {
               Documents
             </h1>
             <div className="flex items-center space-x-4">
-              {/* Upload Button */}
+              <MultiplePDFUploader onUploadComplete={fetchDocuments} />
 
-              <MultiplePDFUploader />
-
-              {/* Delete Selected Button */}
               {selectedDocs.size > 0 && (
                 <button
                   onClick={handleDeleteSelected}
@@ -200,7 +171,6 @@ const DocumentListPage = () => {
                 </button>
               )}
 
-              {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
@@ -214,9 +184,7 @@ const DocumentListPage = () => {
         </div>
       </header>
 
-      {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
-        {/* Error Message */}
         {error && (
           <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100 rounded-lg flex items-center justify-between">
             <span>{error}</span>
@@ -226,7 +194,6 @@ const DocumentListPage = () => {
           </div>
         )}
 
-        {/* Upload Progress */}
         {uploading && (
           <div className="mb-4">
             <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
@@ -238,7 +205,6 @@ const DocumentListPage = () => {
           </div>
         )}
 
-        {/* Folders Section */}
         <section className="mb-8">
           <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
             Folders
@@ -265,7 +231,6 @@ const DocumentListPage = () => {
           </div>
         </section>
 
-        {/* Documents Section */}
         <section>
           <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
             Documents
