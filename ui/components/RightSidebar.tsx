@@ -209,7 +209,6 @@ const RightSidebar = () => {
           <div className="flex justify-between items-center mb-6">
             <Settings className={`w-6 h-6 ${currentThemeClasses.icon}`} />
             <div className="flex gap-4">
-              <Search className={`w-6 h-6 ${currentThemeClasses.icon}`} />
               <Share2 className={`w-6 h-6 ${currentThemeClasses.icon}`} />
             </div>
           </div>

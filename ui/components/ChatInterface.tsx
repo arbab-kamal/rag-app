@@ -18,6 +18,7 @@ import { useTheme, getThemeClasses } from "./Theme";
 import Typewriter from "./Typewriter";
 import Navbar from "./navbar";
 import { Input } from "./ui/input";
+import WelcomeUser from "./Welcome";
 
 interface Message {
   id: number;
@@ -175,11 +176,7 @@ const ChatInterface = () => {
         className={`flex flex-col items-center justify-center min-h-screen mb-4 ${themeClasses.background}`}
       >
         <div className="w-full max-w-2xl mt-24 flex flex-col h-[calc(100vh-100px)]">
-          {/* {session && !isChattingStarted && (
-            <h1 className={`text-3xl text-center mb-8 ${themeClasses.text}`}>
-              {`Welcome, ${session.user.name || session.user.email}!`}
-            </h1>
-          )} */}
+          <WelcomeUser />
 
           <div className="flex-grow overflow-auto mb-4">
             {isChattingStarted && (
