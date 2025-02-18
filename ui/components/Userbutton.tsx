@@ -46,7 +46,7 @@ export function UserProfileButton() {
     {
       label: "About",
       icon: HelpCircle,
-      onClick: () => router.push("/support"),
+      onClick: () => router.push("/about"),
     },
   ];
 
