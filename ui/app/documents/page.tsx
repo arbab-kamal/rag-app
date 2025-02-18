@@ -47,6 +47,12 @@ const DocumentListPage = () => {
       setLoading(true);
       const response = await fetch("http://localhost:8080/files", {
         credentials: "include",
+        // Add cache-busting to prevent browsers from returning cached responses
+        headers: {
+          "Cache-Control": "no-cache, no-store, must-revalidate",
+          Pragma: "no-cache",
+          Expires: "0",
+        },
       });
 
       if (!response.ok) {
@@ -94,10 +100,9 @@ const DocumentListPage = () => {
         throw new Error("Failed to delete document");
       }
 
-      // Update the frontend state after successful deletion
-      setDocuments((prevDocs) =>
-        prevDocs.filter((doc) => doc.title !== documentToDelete.title)
-      );
+      // After successful deletion, refresh the documents list from the server
+      // to ensure frontend and backend are in sync
+      await fetchDocuments();
 
       // Remove from selected docs if it was selected
       const newSelected = new Set(selectedDocs);
@@ -141,6 +146,8 @@ const DocumentListPage = () => {
       );
       await Promise.all(deletePromises);
       setSelectedDocs(new Set());
+      // After deleting all selected documents, refresh the list
+      await fetchDocuments();
     } catch (err) {
       setError(
         err instanceof Error ? err.message : "Failed to delete documents"
@@ -155,7 +162,6 @@ const DocumentListPage = () => {
     fetchDocuments();
   };
 
-  // Rest of the component remains the same ...
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       <header className="border-b border-gray-200 dark:border-gray-700">
