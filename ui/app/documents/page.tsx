@@ -12,6 +12,7 @@ import {
   X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
+import MultiplePDFUploader from "@/components/PdfUploader";
 
 interface Document {
   id: number;
@@ -185,22 +186,8 @@ const DocumentListPage = () => {
             </h1>
             <div className="flex items-center space-x-4">
               {/* Upload Button */}
-              <input
-                type="file"
-                ref={fileInputRef}
-                onChange={handleFileUpload}
-                className="hidden"
-                multiple
-                accept=".pdf,.doc,.docx,.txt"
-              />
-              <button
-                onClick={() => fileInputRef.current?.click()}
-                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2 disabled:opacity-50"
-                disabled={uploading}
-              >
-                <Upload className="h-4 w-4" />
-                <span>{uploading ? "Uploading..." : "Upload"}</span>
-              </button>
+
+              <MultiplePDFUploader />
 
               {/* Delete Selected Button */}
               {selectedDocs.size > 0 && (

@@ -9,14 +9,10 @@ import {
 } from "@/components/ui/dialog";
 import { VisuallyHidden } from "@radix-ui/react-visually-hidden";
 import { Progress } from "@/components/ui/progress";
-import { getThemeClasses, useTheme } from "./Theme";
 
 const PDF_UPLOADER = "http://localhost:8080/upload";
 
 const MultiplePDFUploader = () => {
-  const { theme } = useTheme();
-  const themeClasses = getThemeClasses(theme);
-
   const [uploadedFiles, setUploadedFiles] = useState<
     Array<{
       file: File;
@@ -113,7 +109,6 @@ const MultiplePDFUploader = () => {
 
         setUploadedFiles((prev) => [...prev, ...newFiles]);
 
-        // Upload each file
         validFiles.forEach((file, index) => {
           const fileIndex = uploadedFiles.length + index;
           uploadFile(file, fileIndex);
@@ -141,64 +136,17 @@ const MultiplePDFUploader = () => {
     []
   );
 
-  const getProgressColor = useCallback((progress: number) => {
-    if (progress < 30) return "bg-red-500";
-    if (progress < 70) return "bg-yellow-500";
-    return "bg-green-500";
-  }, []);
-
-  const buttonVariant = theme === "dark" ? "secondary" : "outline";
-  const dialogContentClasses = `
-    sm:max-w-[425px] 
-    ${
-      theme === "dark"
-        ? "bg-gray-800 text-white border-gray-700"
-        : "bg-white text-black border-gray-300"
-    }
-  `;
-
-  const dropzoneClasses = `
-    border-2 border-dashed rounded-lg p-6 text-center cursor-pointer transition
-    ${
-      theme === "dark"
-        ? "border-gray-600 hover:bg-gray-700 bg-gray-800 text-white"
-        : "border-gray-300 hover:bg-gray-100 bg-white text-black"
-    }
-  `;
-
-  const fileListClasses = `
-    fixed bottom-4 right-4 w-80 shadow-lg rounded-lg p-4 z-50 border space-y-4
-    ${
-      theme === "dark"
-        ? "bg-gray-800 border-gray-700 text-white"
-        : "bg-white border-gray-300 text-black"
-    }
-  `;
-
   return (
-    <div className={`relative ${themeClasses.background}`}>
+    <div className="relative">
       <Dialog open={isOpen} onOpenChange={setIsOpen}>
         <DialogTrigger asChild>
-          <Button
-            variant={buttonVariant}
-            className={
-              theme === "dark" ? "bg-gray-800 text-white hover:bg-gray-700" : ""
-            }
-          >
-            <div className="flex items-center gap-2">
-              <Upload
-                className={`w-4 h-4 mr-2 ${
-                  theme === "dark" ? "text-white" : "text-black"
-                }`}
-              />
-              <span className={theme === "dark" ? "text-white" : "text-black"}>
-                Upload PDFs
-              </span>
-            </div>
+          <Button className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2">
+            <Upload className="w-4 h-4" />
+            <span>Upload PDFs</span>
           </Button>
         </DialogTrigger>
 
-        <DialogContent className={dialogContentClasses}>
+        <DialogContent className="sm:max-w-[425px] bg-white">
           <VisuallyHidden>
             <DialogTitle>Upload PDFs</DialogTitle>
           </VisuallyHidden>
@@ -214,7 +162,7 @@ const MultiplePDFUploader = () => {
               aria-label="PDF files input"
             />
             <div
-              className={dropzoneClasses}
+              className="border-2 border-dashed border-blue-500 rounded-lg p-6 text-center cursor-pointer transition hover:bg-blue-50"
               onClick={() => fileInputRef.current?.click()}
               role="button"
               tabIndex={0}
@@ -222,12 +170,8 @@ const MultiplePDFUploader = () => {
                 e.key === "Enter" && fileInputRef.current?.click()
               }
             >
-              <Upload
-                className={`mx-auto h-10 w-10 mb-4 ${
-                  theme === "dark" ? "text-gray-400" : "text-gray-500"
-                }`}
-              />
-              <p className="text-sm">
+              <Upload className="mx-auto h-10 w-10 mb-4 text-blue-500" />
+              <p className="text-sm text-gray-600">
                 Click to select PDF files or drag and drop
               </p>
               <p className="text-xs mt-2 text-gray-500">
@@ -239,20 +183,14 @@ const MultiplePDFUploader = () => {
       </Dialog>
 
       {uploadedFiles.length > 0 && (
-        <div className={fileListClasses}>
+        <div className="fixed bottom-4 right-4 w-80 shadow-lg rounded-lg p-4 z-50 border border-gray-200 bg-white space-y-4">
           {uploadedFiles.map((fileData, index) => (
             <div key={`${fileData.file.name}-${index}`} className="relative">
               <div className="flex items-center justify-between mb-2">
                 <div className="flex items-center gap-2 max-w-[80%]">
-                  <FileIcon
-                    className={`w-4 h-4 ${
-                      theme === "dark" ? "text-white" : "text-black"
-                    }`}
-                  />
+                  <FileIcon className="w-4 h-4 text-blue-500" />
                   <span
-                    className={`text-sm font-medium truncate ${
-                      theme === "dark" ? "text-white" : "text-black"
-                    }`}
+                    className="text-sm font-medium truncate"
                     title={fileData.file.name}
                   >
                     {truncateFileName(fileData.file.name)}
@@ -260,18 +198,10 @@ const MultiplePDFUploader = () => {
                 </div>
                 <div className="flex items-center gap-2">
                   {fileData.status === "uploading" && (
-                    <Loader2
-                      className={`w-4 h-4 animate-spin ${
-                        theme === "dark" ? "text-gray-400" : "text-gray-500"
-                      }`}
-                    />
+                    <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
                   )}
                   <button
-                    className={`p-1 ${
-                      theme === "dark"
-                        ? "text-red-300 hover:bg-red-900"
-                        : "text-red-500 hover:bg-red-100"
-                    } rounded-full`}
+                    className="p-1 text-red-500 hover:bg-red-50 rounded-full"
                     onClick={() => handleRemoveFile(index)}
                     aria-label="Remove file"
                   >
@@ -288,15 +218,9 @@ const MultiplePDFUploader = () => {
                 <>
                   <Progress
                     value={fileData.progress}
-                    className={`h-2 w-full ${
-                      theme === "dark" ? "bg-gray-700" : "bg-gray-200"
-                    } ${getProgressColor(fileData.progress)}`}
+                    className="h-2 w-full bg-gray-100"
                   />
-                  <div
-                    className={`mt-2 text-xs text-center ${
-                      theme === "dark" ? "text-gray-400" : "text-gray-500"
-                    }`}
-                  >
+                  <div className="mt-2 text-xs text-center text-gray-500">
                     {fileData.status === "completed"
                       ? "Completed"
                       : `${fileData.progress}% Uploaded`}
