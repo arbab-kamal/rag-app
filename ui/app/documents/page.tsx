@@ -94,8 +94,10 @@ const DocumentListPage = () => {
         throw new Error("Failed to delete document");
       }
 
-      // Remove the deleted document from the documents state
-      setDocuments((prevDocs) => prevDocs.filter((doc) => doc.id !== docId));
+      // Update the frontend state after successful deletion
+      setDocuments((prevDocs) =>
+        prevDocs.filter((doc) => doc.title !== documentToDelete.title)
+      );
 
       // Remove from selected docs if it was selected
       const newSelected = new Set(selectedDocs);
