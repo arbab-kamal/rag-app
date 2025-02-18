@@ -222,9 +222,9 @@ const RightSidebar = () => {
               <span className="text-sm">{username || "Guest User"}</span>
             </div>
 
-            <div className="mt-4 px-3 py-2">
+            {/* <div className="mt-4 px-3 py-2">
               <PDFUploader />
-            </div>
+            </div> */}
 
             {/* Files Section */}
             <div className="mt-6">
