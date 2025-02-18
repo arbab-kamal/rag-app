@@ -45,7 +45,7 @@ const DocumentListPage = () => {
   const fetchDocuments = async () => {
     try {
       setLoading(true);
-      const response = await fetch("http://localhost:8080/documents", {
+      const response = await fetch("http://localhost:8080/files", {
         credentials: "include",
       });
 
