@@ -1,5 +1,5 @@
 "use client";
-import React, { useState } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   FileText,
   Folder,
@@ -7,60 +7,129 @@ import {
   Square,
   CheckSquare,
   ArrowLeft,
+  Upload,
+  Trash2,
+  X,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 
+interface Document {
+  id: number;
+  title: string;
+  type: string;
+  size: string;
+  modified: string;
+}
+
 const DocumentListPage = () => {
   const router = useRouter();
+  const fileInputRef = useRef<HTMLInputElement>(null);
   const [selectedDocs, setSelectedDocs] = useState(new Set());
+  const [documents, setDocuments] = useState<Document[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const [error, setError] = useState<string | null>(null);
 
-  // Sample document data
-  const documents = [
-    {
-      id: 1,
-      title: "Project Proposal",
-      type: "pdf",
-      size: "2.4 MB",
-      modified: "2024-02-17",
-    },
-    {
-      id: 2,
-      title: "Meeting Notes",
-      type: "doc",
-      size: "1.1 MB",
-      modified: "2024-02-16",
-    },
-    {
-      id: 3,
-      title: "Budget Report",
-      type: "xlsx",
-      size: "3.7 MB",
-      modified: "2024-02-15",
-    },
-    {
-      id: 4,
-      title: "Client Presentation",
-      type: "ppt",
-      size: "5.2 MB",
-      modified: "2024-02-14",
-    },
-    {
-      id: 5,
-      title: "Research Paper",
-      type: "pdf",
-      size: "4.3 MB",
-      modified: "2024-02-13",
-    },
-  ];
-
-  // Sample folders
+  // Sample folders (you can replace with actual folder data)
   const folders = [
     { id: 1, name: "Projects", count: 12 },
     { id: 2, name: "Reports", count: 8 },
     { id: 3, name: "Archives", count: 15 },
   ];
 
-  const toggleDocument = (docId) => {
+  useEffect(() => {
+    fetchDocuments();
+  }, []);
+
+  const fetchDocuments = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch("http://localhost:8080/documents", {
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to fetch documents");
+      }
+
+      const data = await response.json();
+      setDocuments(data);
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to fetch documents"
+      );
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleFileUpload = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const files = event.target.files;
+    if (!files || files.length === 0) return;
+
+    try {
+      setUploading(true);
+      setUploadProgress(0);
+
+      const formData = new FormData();
+      Array.from(files).forEach((file) => {
+        formData.append("files", file);
+      });
+
+      const response = await fetch("http://localhost:8080/upload", {
+        method: "POST",
+        credentials: "include",
+        body: formData,
+      });
+
+      if (!response.ok) {
+        throw new Error("Upload failed");
+      }
+
+      // Reset file input
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+
+      // Refresh document list
+      await fetchDocuments();
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Upload failed");
+    } finally {
+      setUploading(false);
+      setUploadProgress(0);
+    }
+  };
+
+  const handleDeleteDocument = async (docId: number) => {
+    try {
+      const response = await fetch(`http://localhost:8080/documents/${docId}`, {
+        method: "DELETE",
+        credentials: "include",
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to delete document");
+      }
+
+      // Remove from selected docs if it was selected
+      const newSelected = new Set(selectedDocs);
+      newSelected.delete(docId);
+      setSelectedDocs(newSelected);
+
+      // Refresh document list
+      await fetchDocuments();
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to delete document"
+      );
+    }
+  };
+
+  const toggleDocument = (docId: number) => {
     const newSelected = new Set(selectedDocs);
     if (newSelected.has(docId)) {
       newSelected.delete(docId);
@@ -82,6 +151,20 @@ const DocumentListPage = () => {
     router.push("/chat");
   };
 
+  const handleDeleteSelected = async () => {
+    try {
+      const deletePromises = Array.from(selectedDocs).map((docId) =>
+        handleDeleteDocument(docId as number)
+      );
+      await Promise.all(deletePromises);
+      setSelectedDocs(new Set());
+    } catch (err) {
+      setError(
+        err instanceof Error ? err.message : "Failed to delete documents"
+      );
+    }
+  };
+
   return (
     <div className="min-h-screen bg-white dark:bg-gray-900">
       {/* Header */}
@@ -91,7 +174,6 @@ const DocumentListPage = () => {
             <button
               onClick={handleReturn}
               className="flex items-center text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white transition-colors"
-              aria-label="Return to chat"
             >
               <ArrowLeft className="h-5 w-5 mr-2" />
               <span>Return to Chat</span>
@@ -102,11 +184,36 @@ const DocumentListPage = () => {
               Documents
             </h1>
             <div className="flex items-center space-x-4">
+              {/* Upload Button */}
+              <input
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                className="hidden"
+                multiple
+                accept=".pdf,.doc,.docx,.txt"
+              />
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="px-4 py-2 bg-blue-500 text-white rounded-lg hover:bg-blue-600 flex items-center space-x-2 disabled:opacity-50"
+                disabled={uploading}
+              >
+                <Upload className="h-4 w-4" />
+                <span>{uploading ? "Uploading..." : "Upload"}</span>
+              </button>
+
+              {/* Delete Selected Button */}
               {selectedDocs.size > 0 && (
-                <span className="text-sm text-gray-500 dark:text-gray-400">
-                  {selectedDocs.size} selected
-                </span>
+                <button
+                  onClick={handleDeleteSelected}
+                  className="px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600 flex items-center space-x-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                  <span>Delete Selected</span>
+                </button>
               )}
+
+              {/* Search */}
               <div className="relative">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
                 <input
@@ -122,6 +229,28 @@ const DocumentListPage = () => {
 
       {/* Main Content */}
       <main className="container mx-auto px-4 py-6">
+        {/* Error Message */}
+        {error && (
+          <div className="mb-4 p-4 bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100 rounded-lg flex items-center justify-between">
+            <span>{error}</span>
+            <button onClick={() => setError(null)}>
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        )}
+
+        {/* Upload Progress */}
+        {uploading && (
+          <div className="mb-4">
+            <div className="w-full bg-gray-200 rounded-full h-2.5 dark:bg-gray-700">
+              <div
+                className="bg-blue-600 h-2.5 rounded-full"
+                style={{ width: `${uploadProgress}%` }}
+              ></div>
+            </div>
+          </div>
+        )}
+
         {/* Folders Section */}
         <section className="mb-8">
           <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
@@ -152,93 +281,104 @@ const DocumentListPage = () => {
         {/* Documents Section */}
         <section>
           <h2 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">
-            Recent Documents
+            Documents
           </h2>
           <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="bg-gray-50 dark:bg-gray-700">
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      <div className="flex items-center">
-                        <button
-                          onClick={toggleAll}
-                          className="mr-3 focus:outline-none"
-                          aria-label={
-                            selectedDocs.size === documents.length
-                              ? "Deselect all"
-                              : "Select all"
-                          }
-                        >
-                          {selectedDocs.size === documents.length ? (
-                            <CheckSquare className="h-4 w-4 text-blue-500" />
-                          ) : (
-                            <Square className="h-4 w-4 text-gray-400" />
-                          )}
-                        </button>
-                        Name
-                      </div>
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Size
-                    </th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
-                      Modified
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {documents.map((doc) => (
-                    <tr
-                      key={doc.id}
-                      className="hover:bg-gray-50 dark:hover:bg-gray-700"
-                    >
-                      <td className="px-6 py-4">
+            {loading ? (
+              <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                Loading documents...
+              </div>
+            ) : documents.length === 0 ? (
+              <div className="p-4 text-center text-gray-500 dark:text-gray-400">
+                No documents found
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead>
+                    <tr className="bg-gray-50 dark:bg-gray-700">
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                         <div className="flex items-center">
                           <button
-                            onClick={() => toggleDocument(doc.id)}
+                            onClick={toggleAll}
                             className="mr-3 focus:outline-none"
-                            aria-label={
-                              selectedDocs.has(doc.id)
-                                ? `Deselect ${doc.title}`
-                                : `Select ${doc.title}`
-                            }
                           >
-                            {selectedDocs.has(doc.id) ? (
+                            {selectedDocs.size === documents.length ? (
                               <CheckSquare className="h-4 w-4 text-blue-500" />
                             ) : (
                               <Square className="h-4 w-4 text-gray-400" />
                             )}
                           </button>
-                          <FileText className="h-5 w-5 text-gray-400 mr-3" />
-                          <span className="text-sm text-gray-900 dark:text-white">
-                            {doc.title}
-                          </span>
+                          Name
                         </div>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-gray-500 dark:text-gray-400 uppercase">
-                          {doc.type}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {doc.size}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {doc.modified}
-                        </span>
-                      </td>
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Type
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Size
+                      </th>
+                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Modified
+                      </th>
+                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wider">
+                        Actions
+                      </th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {documents.map((doc) => (
+                      <tr
+                        key={doc.id}
+                        className="hover:bg-gray-50 dark:hover:bg-gray-700"
+                      >
+                        <td className="px-6 py-4">
+                          <div className="flex items-center">
+                            <button
+                              onClick={() => toggleDocument(doc.id)}
+                              className="mr-3 focus:outline-none"
+                            >
+                              {selectedDocs.has(doc.id) ? (
+                                <CheckSquare className="h-4 w-4 text-blue-500" />
+                              ) : (
+                                <Square className="h-4 w-4 text-gray-400" />
+                              )}
+                            </button>
+                            <FileText className="h-5 w-5 text-gray-400 mr-3" />
+                            <span className="text-sm text-gray-900 dark:text-white">
+                              {doc.title}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm text-gray-500 dark:text-gray-400 uppercase">
+                            {doc.type}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {doc.size}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4">
+                          <span className="text-sm text-gray-500 dark:text-gray-400">
+                            {doc.modified}
+                          </span>
+                        </td>
+                        <td className="px-6 py-4 text-right">
+                          <button
+                            onClick={() => handleDeleteDocument(doc.id)}
+                            className="text-red-500 hover:text-red-700 focus:outline-none"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </div>
         </section>
       </main>
