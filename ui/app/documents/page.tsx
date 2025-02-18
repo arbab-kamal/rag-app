@@ -1,4 +1,3 @@
-"use client";
 import React, { useState, useRef, useEffect } from "react";
 import {
   FileText,
@@ -81,8 +80,11 @@ const DocumentListPage = () => {
       const documentToDelete = documents.find((doc) => doc.id === docId);
       if (!documentToDelete) return;
 
+      // Using query parameter for the fileName
       const response = await fetch(
-        `http://localhost:8080/delete/${documentToDelete.title}`,
+        `http://localhost:8080/delete?fileName=${encodeURIComponent(
+          documentToDelete.title
+        )}`,
         {
           method: "DELETE",
           credentials: "include",
